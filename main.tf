@@ -10,7 +10,6 @@ data "aws_subnets" "default" {
   }
 }
 
-# Security Group do Load Balancer
 resource "aws_security_group" "lb_sg" {
   name        = "lb-sg-${var.environment}"
   description = "SG para Load Balancer"
@@ -31,7 +30,6 @@ resource "aws_security_group" "lb_sg" {
   }
 }
 
-# Security Group da EC2
 resource "aws_security_group" "ec2_sg" {
   name        = "ec2-sg-${var.environment}"
   description = "SG para EC2"
@@ -59,7 +57,6 @@ resource "aws_security_group" "ec2_sg" {
   }
 }
 
-# Security Group do RDS
 resource "aws_security_group" "db_sg" {
   name        = "db-sg-${var.environment}"
   description = "SG para RDS"
@@ -80,7 +77,6 @@ resource "aws_security_group" "db_sg" {
   }
 }
 
-# AMI Amazon Linux 2
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
   owners      = ["amazon"]
@@ -91,7 +87,6 @@ data "aws_ami" "amazon_linux_2" {
   }
 }
 
-# Instância EC2
 resource "aws_instance" "web" {
   ami                    = data.aws_ami.amazon_linux_2.id
   instance_type          = "t3.micro"
@@ -111,13 +106,11 @@ resource "aws_instance" "web" {
   }
 }
 
-# Subnet Group para RDS
 resource "aws_db_subnet_group" "main" {
   name       = "db-subnet-${var.environment}"
   subnet_ids = data.aws_subnets.default.ids
 }
 
-# Banco de Dados RDS
 resource "aws_db_instance" "mysql" {
   identifier           = "webapp-db-${var.environment}"
   engine               = "mysql"
@@ -138,7 +131,6 @@ resource "aws_db_instance" "mysql" {
   }
 }
 
-# Load Balancer
 resource "aws_lb" "web" {
   name               = "web-lb-${var.environment}"
   internal           = false
@@ -151,7 +143,6 @@ resource "aws_lb" "web" {
   }
 }
 
-# Target Group
 resource "aws_lb_target_group" "web" {
   name     = "web-tg-${var.environment}"
   port     = 80
@@ -166,14 +157,12 @@ resource "aws_lb_target_group" "web" {
   }
 }
 
-# Anexar EC2 ao Target Group
 resource "aws_lb_target_group_attachment" "web" {
   target_group_arn = aws_lb_target_group.web.arn
   target_id        = aws_instance.web.id
   port             = 80
 }
 
-# Listener do Load Balancer
 resource "aws_lb_listener" "web" {
   load_balancer_arn = aws_lb.web.arn
   port              = 80

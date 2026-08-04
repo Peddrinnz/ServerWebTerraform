@@ -28,43 +28,59 @@ Este projeto utiliza os seguintes arquivos:
 Clone o repositório ou crie uma pasta para o projeto:
 
 ```bash
-mkdir terraform-projeto
-cd terraform-projeto
+git clone <seu-repo-url>
+cd terraform
 ```
 
-### 2. Inicializar o Terraform
+### 2. Configurar GitHub Actions
 
-Baixe os provedores e dependências:
+Vá em `Settings > Secrets and variables > Actions` no GitHub e crie os seguintes secrets:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `TF_STATE_BUCKET`
+- `TF_STATE_KEY`
+- `TF_LOCK_TABLE`
+
+> O bucket S3 e a tabela DynamoDB devem já existir na AWS e ter as permissões necessárias para o GitHub Actions.
+
+### 3. Executar o pipeline localmente (opcional)
+
+Para testar localmente, use:
 
 ```bash
-terraform init
-```
-
-### 3. Validar a configuração
-
-Verifique se os arquivos Terraform estão corretos:
-
-```bash
+terraform init \
+  -backend-config="bucket=<seu-bucket>" \
+  -backend-config="key=<seu-key>" \
+  -backend-config="region=us-east-2" \
+  -backend-config="dynamodb_table=<sua-tabela>"
 terraform validate
-```
-
-### 4. Verificar o plano
-
-Veja o que será criado antes de aplicar:
-
-```bash
 terraform plan
+terraform apply -auto-approve
 ```
 
-### 5. Aplicar a infraestrutura
+### 4. Como funciona o workflow do GitHub Actions
 
-Execute o deploy dos recursos:
+O workflow `./github/workflows/deploy.yml` realiza:
 
-```bash
-terraform apply
-```
+1. Checkout do código
+2. Instalação do Terraform
+3. Configuração das credenciais AWS do GitHub Secrets
+4. `terraform init` usando backend S3 e lock DynamoDB
+5. `terraform validate`
+6. `terraform plan`
+7. Upload do `tfplan` como artifact
+8. `terraform apply` automático para push na branch `main`
 
-Confirme digitando `yes` quando solicitado.
+### 5. Deploy via GitHub Actions
+
+O pipeline é disparado em:
+
+- `push` na branch `main`
+- `pull_request` contra `main`
+
+No caso de PR, ele executa `terraform init`, `validate` e `plan`.
+No caso de `push` para `main`, ele também aplica o plano.
 
 ## Verificação dos resultados
 
